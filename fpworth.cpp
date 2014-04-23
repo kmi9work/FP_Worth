@@ -16,6 +16,7 @@
 // Apriori можно ускорить. Бизнес-аналитика От данных к знаниям 2013.djvu, стр. 290.
 // Вместо обращения к базе, просмотр наборов размера k-1.
 
+
 QString QString::number(double n, char f, int prec){
     return QLocale().toString(n, f, prec);
 }
