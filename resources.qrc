@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/images">
+        <file alias="loading.gif">images/loading.gif</file>
+    </qresource>
+    <qresource prefix="/data">
+        <file alias="ids.txt">data/ids.txt</file>
+    </qresource>
+</RCC>
