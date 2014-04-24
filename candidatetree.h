@@ -12,15 +12,15 @@ class CandidateTree
 public:
     CandidateTree(QVector<double> ds, int rs);
     struct term data;
-    double support;
+    int support; // Поддержка
     int rows;
+    double conf; // Достоверность
     CandidateTree *father;
     QVector<CandidateTree*> children;
     QVector<int> string_numbers;
     void addChild(struct term d, int supp, QVector<int> str_nums);
 
-    void makeTree(QVector<QVector<numCluster> > data, int rows);
-
+    void makeTree(QVector<QVector<numCluster> > data, int rows, int cols);
     QVector<pattern> assocRules(int first, int last);
     QVector<double> deltas;
     int level;

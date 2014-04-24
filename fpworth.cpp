@@ -64,11 +64,11 @@ FPWorth::~FPWorth()
     delete ui;
 }
 
-bool bySupports(const struct term &p1, const struct term &p2){
+bool bys(const struct term &p1, const struct term &p2){
     return p1.support > p2.support;
 }
 bool bySupportPattern(const struct pattern &p1, const struct pattern &p2){
-    return p1.support > p2.support;
+    return p1.support*p1.conf > p2.support*p2.conf;
 }
 bool byFirst (const QVector<double> &v1, const QVector<double> &v2){
     return v1[0] > v2[0];
@@ -426,7 +426,7 @@ void FPWorth::makeCTree(int rows){
             rootCTree->addChild(terms[i][j], 0, buf);
         }
     }
-    rootCTree->makeTree(data, rows);
+    rootCTree->makeTree(data, rows, cols);
 }
 
 void FPWorth::findRules(int first, int last){
@@ -443,12 +443,13 @@ void FPWorth::printRules(QVector<pattern> fpList){
             str += names[fpList[i].word[j].lp_number] + tr("{%1} и ").arg(fpList[i].word[j].term_number + 1);
         }
         str += names[fpList[i].word[j].lp_number] + tr("{%1}").arg(fpList[i].word[j].term_number + 1);
-        str += tr(", то %1{} / %2 из %3. ")
-                .arg(names.last())
+        str += tr(", %1 из %2. conf: %3 | ")
+//                .arg(names.last())
 //                .arg(fpList[i].cluster+1)
 //                .arg(QString::number(((double)fpList[i].support / fpList[i].count) * 100.0, 'f', 1))
                 .arg(QString::number(fpList[i].support))
-                .arg(rows);
+                .arg(rows)
+                .arg(fpList[i].conf);
 //                .arg(QString::number(fpList[i].count));
         str += tr("Номера строк: ");
         for (j = 0; j < fpList[i].str_numbers.size() - 1; j++){
@@ -694,10 +695,6 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
                 cs[i][j][1] = dispersio(ys[i][j]);
             }
             prog_val = 55 + ((double)i/(cols+1))*40 + 1; ui->plotProgressBar->setValue(prog_val);
-            std::cout << i << ", " << j << std::endl;
-            std::cout << xs[i][j].tostring(2) << "\n----------" << std::endl;
-            std::cout << ys[i][j].tostring(2) << "\n==========" << std::endl;
-            std::cout << cs[i][j].tostring(2) << "\n~~~~~~~~~~" << std::endl;
             alglib::lsfitcreatef(xs[i][j], ys[i][j], cs[i][j], diffstep, state);
             prog_val = 55 + ((double)i/(cols+1))*40 + 2; ui->plotProgressBar->setValue(prog_val);
             alglib::lsfitsetcond(state, epsf, epsx, maxits);

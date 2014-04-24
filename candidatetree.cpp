@@ -12,6 +12,7 @@ CandidateTree::CandidateTree(QVector<double> ds, int rs)
     level = -1;
     deltas = ds;
     rows = rs;
+    levels.resize(1);
 }
 
 void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
@@ -26,10 +27,11 @@ void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
             ct->support = d.support;
             ct->string_numbers = str_nums;
             children.append(ct);
+            /*
             if (levels.size() < ct->level + 1){
                 levels.resize(ct->level + 1);
             }
-            levels[ct->level].append(ct);
+            levels[ct->level].append(ct);*/
         }
     }else{//if ((double)min(support, d.support)/rows > deltas[min(level + 1, deltas.size() - 1)]){
         ct = new CandidateTree(deltas, rows);
@@ -39,15 +41,16 @@ void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
         ct->support = supp;
         ct->string_numbers = str_nums;
         children.append(ct);
+        /*
         if (levels.size() < ct->level + 1){
             levels.resize(ct->level + 1);
         }
-        levels[ct->level].append(ct);
+        levels[ct->level].append(ct);*/
     }
 }
 
 
-void CandidateTree::makeTree(QVector< QVector<struct numCluster> > data, int rows)
+void CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int rows, int cols)
 
 {
     int i, j, k, l;
@@ -56,6 +59,11 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > data, int row
     QVector<int> str_nums;
     int currentSupp;
     int fl;
+    if (children.empty() && data.lp_number == cols && father != NULL && father->father != NULL){
+        std::cout << "This is it!" << std::endl;
+        conf = (double) support / (double)father->support;
+        levels[0].append(this);
+    }
 
     for (i = 0; i < children.size() - 1; i++){
         for (j = i + 1; j < children.size(); j++){// ???
@@ -71,7 +79,7 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > data, int row
             for (l = 0; l < rows; l++){
                 fl = 1;
                 for (k = 0; k < currentTerms.size(); k++){
-                    if (data[l][currentTerms[k].lp_number].cluster != currentTerms[k].term_number){
+                    if (records[l][currentTerms[k].lp_number].cluster != currentTerms[k].term_number){
                         fl = 0;
                         break;
                         // String numbers maybe here
@@ -86,7 +94,7 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > data, int row
                 children[i]->addChild(children[j]->data, currentSupp, str_nums);
             }
         }
-        children[i]->makeTree(data, rows);
+        children[i]->makeTree(records, rows, cols);
     }
 }
 
@@ -101,6 +109,7 @@ QVector<struct pattern> CandidateTree::assocRules(int first, int last)
         for (j = 0; j < levels[i].size(); j++){
             node = levels[i][j];
             buf_pattern.support = node->support;
+            buf_pattern.conf = node->conf;
             buf_pattern.word.clear();
             buf_pattern.str_numbers.clear();
             buf_pattern.str_numbers = node->string_numbers;

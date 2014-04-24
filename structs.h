@@ -20,6 +20,7 @@ struct city{
 
 struct pattern{
     int support;
+    double conf;
     QVector<struct term> word;
     QVector<int> str_numbers;
 };
