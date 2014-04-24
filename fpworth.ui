@@ -70,6 +70,12 @@
                </item>
                <item>
                 <widget class="QLabel" name="normalFileLabel">
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
                  <property name="text">
                   <string>Выберите файл</string>
                  </property>
@@ -101,6 +107,12 @@
                </item>
                <item>
                 <widget class="QLabel" name="fuzzyFileLabel">
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
                  <property name="text">
                   <string>Выберите файл</string>
                  </property>
@@ -138,6 +150,12 @@
                </item>
                <item>
                 <widget class="QLabel" name="addNormalFileLabel">
+                 <property name="maximumSize">
+                  <size>
+                   <width>200</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
                  <property name="text">
                   <string>Выберите файл</string>
                  </property>
@@ -1742,6 +1760,9 @@
          </property>
         </widget>
         <widget class="QStackedWidget" name="stackedWidget">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>760</x>
@@ -2090,6 +2111,9 @@
          </widget>
         </widget>
         <widget class="QSlider" name="horizontalSlider">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>780</x>
@@ -2115,6 +2139,9 @@
          </property>
         </widget>
         <widget class="QDoubleSpinBox" name="stepSpin">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>950</x>
@@ -2147,6 +2174,9 @@
          </property>
         </widget>
         <widget class="QPushButton" name="magicButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>650</x>
@@ -2186,6 +2216,9 @@
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
            <widget class="QComboBox" name="tableCombo">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="currentIndex">
              <number>0</number>
             </property>

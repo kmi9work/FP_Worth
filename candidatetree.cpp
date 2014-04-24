@@ -47,7 +47,7 @@ void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
 }
 
 
-void CandidateTree::makeTree(QVector< QVector<int> > numbers, int rows)
+void CandidateTree::makeTree(QVector< QVector<struct numCluster> > data, int rows)
 
 {
     int i, j, k, l;
@@ -71,7 +71,7 @@ void CandidateTree::makeTree(QVector< QVector<int> > numbers, int rows)
             for (l = 0; l < rows; l++){
                 fl = 1;
                 for (k = 0; k < currentTerms.size(); k++){
-                    if (numbers[l][currentTerms[k].lp_number] != currentTerms[k].term_number){
+                    if (data[l][currentTerms[k].lp_number].cluster != currentTerms[k].term_number){
                         fl = 0;
                         break;
                         // String numbers maybe here
@@ -86,11 +86,11 @@ void CandidateTree::makeTree(QVector< QVector<int> > numbers, int rows)
                 children[i]->addChild(children[j]->data, currentSupp, str_nums);
             }
         }
-        children[i]->makeTree(numbers, rows);
+        children[i]->makeTree(data, rows);
     }
 }
 
-QVector<struct pattern> CandidateTree::assocRules(int first, int last, int step)
+QVector<struct pattern> CandidateTree::assocRules(int first, int last)
 {
     int i, j;
     CandidateTree *node;
@@ -100,12 +100,10 @@ QVector<struct pattern> CandidateTree::assocRules(int first, int last, int step)
     for (i = first - 1; i < min(last,levels.size()); i++){
         for (j = 0; j < levels[i].size(); j++){
             node = levels[i][j];
-            buf_pattern.count = rows;
             buf_pattern.support = node->support;
             buf_pattern.word.clear();
             buf_pattern.str_numbers.clear();
             buf_pattern.str_numbers = node->string_numbers;
-            buf_pattern.cluster = step;
             for (; node->father != NULL; node = node->father){
                 buf_pattern.word.prepend(node->data);
                 //buf_pattern.str_numbers.append(node->data.str_num);// ?

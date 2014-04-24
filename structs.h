@@ -20,8 +20,6 @@ struct city{
 
 struct pattern{
     int support;
-    int count; // rows[k]
-    int cluster; // k (fire cluster)
     QVector<struct term> word;
     QVector<int> str_numbers;
 };

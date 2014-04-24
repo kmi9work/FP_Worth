@@ -42,7 +42,6 @@ FPWorth::FPWorth(QWidget *parent) :
 
     QLocale curLocale(QLocale("ru_RU"));
     QLocale::setDefault(curLocale);
-    tableComboPrevIndex = 1;
     rulesListIndex_prev = -1;
     plot = new Plot();
     layout = new QHBoxLayout( ui->plotWidget );
@@ -82,39 +81,25 @@ struct ByColumn {
     int i;
 };
 
-void FPWorth::printNumbers(QTableWidget *table, int max_rows, int add, int start_x = 0, int start_y = 0){
-    int i,j,k;
-    QTableWidgetItem *item;
-    int r_sum = 0;
-    table->setColumnCount(cols + 1);
-    table->setRowCount(max_rows);
-    for (i = 0; i < cols + 1; i++){
-        item = new QTableWidgetItem(names[i]);
-        table->setHorizontalHeaderItem(i, item);
-    }
-    for (k = 0; k < fire_count; k++){
-        for (i = 0; i < rows[k]; i++){
-            for (j = 0; j < cols; j++){
-                item = new QTableWidgetItem(QString::number(numbers[k][i][j] + add));
-                table->setItem(start_x + r_sum, start_y + j, item);
-            }
-            item = new QTableWidgetItem(QString::number(k + add));
-            table->setItem(start_x + r_sum, start_y + j, item);
-            r_sum += 1;
-        }
-    }
-}
-
-void FPWorth::printQVector(QVector< QVector<struct numCluster> > v, int start_x, int start_y){
+void FPWorth::printData(){
     int i,j;
     QTableWidgetItem *item;
-    for (i = 0; i < v.size(); i++){
-        for (j = 0; j < v[i].size(); j++){
-            item = new QTableWidgetItem(QString::number(v[i][j].cluster));
-            ui->normalTable->setItem(start_x + i, start_y + j, item);
-            if ((i == 0 && j == 0) || (i == v.size() - 1 && j == v[i].size() - 1)){
-                item->setBackgroundColor(QColor(255,0,0));
-            }
+    ui->normalTable->setRowCount(rows);
+    ui->normalTable->setColumnCount(cols+1);
+    ui->fuzzyTable->setRowCount(rows);
+    ui->fuzzyTable->setColumnCount(cols+1);
+    for (i = 0; i < cols + 1; i++){
+        item = new QTableWidgetItem(names[i]);
+        ui->normalTable->setHorizontalHeaderItem(i, item);
+        item = new QTableWidgetItem(names[i]);
+        ui->fuzzyTable->setHorizontalHeaderItem(i, item);
+    }
+    for (i = 0; i < rows; i++){
+        for (j = 0; j < cols + 1; j++){
+            item = new QTableWidgetItem(QString::number(data[i][j].number));
+            ui->normalTable->setItem(i, j, item);
+            item = new QTableWidgetItem(QString::number(data[i][j].cluster));
+            ui->fuzzyTable->setItem(i, j, item);
         }
     }
 }
@@ -155,37 +140,15 @@ QStringList FPWorth::readFileToStringList(QString fileName){
         term_counts[i] = buf_list[i].toInt();
     }
     fire_count = term_counts[cols];
-    qDebug() << "readFileToStringList: msg10";
-    if (!ui->tableCombo) qDebug() << "there is no combo!";
-    for (i = ui->tableCombo->count(); i < fire_count; i++){
-        qDebug() << "readFileToStringList: msg20  i = " << i;
-        ui->tableCombo->addItem(QString::number(i+1));
-        qDebug() << "readFileToStringList: msg30";
-    }
-    qDebug() << "readFileToStringList: msg40";
-    while (ui->tableCombo->count() > fire_count){
-        ui->tableCombo->removeItem(ui->tableCombo->count() - 1);
-    }
-    firsts.clear();
-    lasts.clear();
-    countRules.clear();
-    firsts.resize(fire_count);
-    lasts.resize(fire_count);
-    countRules.resize(fire_count);
-    for (i = 0; i < fire_count; i++){
-        countRules[i] = 5;
-        firsts[i] = 3;
-        lasts[i] = 3;
-    }
-    deltas.clear();
-    deltas.resize(fire_count);
-    for (i = 1; i < fire_count; i++){
-        deltas[i].resize(lasts[i]);
-    }
-    tableComboPrevIndex = ui->tableCombo->currentIndex();
-    ui->countRulesEdit->setText(QString::number(countRules[tableComboPrevIndex]));
-    ui->termCountFirst->setValue(firsts[tableComboPrevIndex]);
-    ui->termCountLast->setValue(lasts[tableComboPrevIndex]);
+
+    countRules = 5;
+    first_level = 3;
+    last_level = 3;
+
+    deltas.resize(last_level);
+    ui->countRulesEdit->setText(QString::number(countRules));
+    ui->termCountFirst->setValue(first_level);
+    ui->termCountLast->setValue(last_level);
     // Second line is lvar sizes. Not ready yet.
     while (!in.atEnd()){
         ret.append(in.readLine());
@@ -218,27 +181,16 @@ void FPWorth::on_openFuzzyButton_clicked(){
     ui->progressBar->setValue(25);
     if (inputStrList.empty()) return;
     max_rows = inputStrList.size();
-    fuzzyTableIndexes_prev.reserve(max_rows);
+    //fuzzyTableIndexes_prev.reserve(max_rows);
     fuzzyTableIndexes_prev.resize(0);
-    rows.clear();
-    rows.resize(fire_count);
-    for (i = 0; i < fire_count; i++) rows[i] = 0;
+    rows = max_rows;
     // -- input of numeric --
-    numbers.clear();
-    numbers.resize(fire_count);
-    for (i = 0; i < fire_count; i++){
-        numbers[i].resize(max_rows);
-        for (j = 0; j < max_rows; j++){
-            numbers[i][j].resize(cols);
-        }
-    }
     data.clear();
-    data.resize(max_rows);
+    data.resize(rows);
     stop_messages = 0;
-    for (i = 0; i < max_rows; i++){
-        ui->progressBar->setValue(30 + ((double)i/max_rows)*50);
+    for (i = 0; i < rows; i++){
+        ui->progressBar->setValue(30 + ((double)i/rows)*50);
         splitList = inputStrList.at(i).split(sep);
-        k = splitList.last().toInt() - 1;
         if (splitList.size() != (cols+1) && stop_messages < 5){
             QMessageBox::warning(this, tr("Error"), tr("Wrong size of %1'th row.").arg(i));
             stop_messages += 1;
@@ -247,14 +199,11 @@ void FPWorth::on_openFuzzyButton_clicked(){
         data[i].resize(cols+1);
         for (j = 0; j < splitList.size() - 1; j++){
             data[i][j].cluster = splitList.at(j).toInt() - 1;
-            numbers[k][rows[k]][j] = splitList.at(j).toInt() - 1;
         }
         data[i][j].cluster = splitList.at(j).toInt() - 1;
-        rows[k] += 1;
     }
     // == End input of numeric ==
     ui->fuzzyTable->clear();
-    printNumbers(ui->fuzzyTable,max_rows, 1);
     ui->progressBar->setValue(100);
     ui->addNormalButton->setEnabled(true);
 }
@@ -290,9 +239,13 @@ void FPWorth::on_addNormalButton_clicked()
     }
     csvFile.close();
     max_rows = inputStrList.size();
+    if (max_rows != rows){
+        QMessageBox::critical(this, tr("Wrong file size"),
+                              tr("Wrong size of %1").arg(fileName));
+        return;
+    }
 
-
-    for (i = 0; i < max_rows; i++){
+    for (i = 0; i < rows; i++){
         splitList = inputStrList[i].split(sep);
         if (splitList.size() != cols + 1){
             QMessageBox::critical(this, tr("Error in line size"),
@@ -307,16 +260,10 @@ void FPWorth::on_addNormalButton_clicked()
     // -- Print normal data to normalTable --
     ui->normalTable->clear();
     ui->normalTable->setColumnCount(cols + 1); // + Fires
-    ui->normalTable->setRowCount(max_rows);
+    ui->normalTable->setRowCount(rows);
     for (i = 0; i < names.size(); i++){
         item = new QTableWidgetItem(names[i]);
         ui->normalTable->setHorizontalHeaderItem(i, item);
-    }
-    for (i = 0; i < max_rows; i++){
-        for (j = 0; j < cols + 1; j++){
-            item = new QTableWidgetItem(QString::number(data[i][j].number));
-            ui->normalTable->setItem(i, j, item);
-        }
     }
 
     // ------
@@ -345,6 +292,7 @@ void FPWorth::on_addNormalButton_clicked()
             }
         }
     }
+    printData();
 }
 
 void FPWorth::on_openNormalButton_clicked(){
@@ -371,14 +319,14 @@ void FPWorth::on_openNormalButton_clicked(){
     inputStrList = readFileToStringList(fileName);
     ui->progressBar->setValue(30);
     if (inputStrList.empty()) return;
-    max_rows = inputStrList.size();
+    rows = inputStrList.size();
 
     data.clear();
-    data.resize(max_rows);
-    fuzzyTableIndexes_prev.reserve(max_rows);
+    data.resize(rows);
+    fuzzyTableIndexes_prev.reserve(rows);
     fuzzyTableIndexes_prev.resize(0);
-    for (i = 0; i < max_rows; i++){
-        ui->progressBar->setValue(31 + ((double)i/max_rows)*30);
+    for (i = 0; i < rows; i++){
+        ui->progressBar->setValue(31 + ((double)i/rows)*30);
         splitList = inputStrList[i].split(sep);
         if (splitList.size() != cols + 1){
             QMessageBox::critical(this, tr("Error in line size"),
@@ -395,12 +343,12 @@ void FPWorth::on_openNormalButton_clicked(){
     ui->progressBar->setValue(60);
     // -- Print normal data to normalTable --
     ui->normalTable->setColumnCount(cols + 1); // + Fires
-    ui->normalTable->setRowCount(max_rows);
+    ui->normalTable->setRowCount(rows);
     for (i = 0; i < names.size(); i++){
         item = new QTableWidgetItem(names[i]);
         ui->normalTable->setHorizontalHeaderItem(i, item);
     }
-    for (i = 0; i < max_rows; i++){
+    for (i = 0; i < rows; i++){
         for (j = 0; j < cols + 1; j++){
             item = new QTableWidgetItem(QString::number(data[i][j].number));
             ui->normalTable->setItem(i, j, item);
@@ -413,7 +361,7 @@ void FPWorth::on_openNormalButton_clicked(){
 
     alglib::clusterizercreate(s);
     alglib::clusterizersetkmeanslimits(s, 100, 0);
-    workplace.setlength(max_rows, 1);
+    workplace.setlength(rows, 1);
     means.clear();
     means.resize(cols + 1);
     count_cluster.clear();
@@ -434,7 +382,7 @@ void FPWorth::on_openNormalButton_clicked(){
         qSort(means[i].begin(), means[i].end());
         term_num = 0;
         count_cluster[i][term_num] = 0;
-        for (j = 0; j < max_rows; j++){
+        for (j = 0; j < rows; j++){
             if (buf_int != rep.cidx[j]){
                 term_num++;
                 buf_int = rep.cidx[j];
@@ -445,33 +393,8 @@ void FPWorth::on_openNormalButton_clicked(){
         }
     }
 
-    numbers.clear();
-    numbers.resize(fire_count);
-    for (i = 0; i < fire_count; i++){
-        numbers[i].resize(max_rows);
-        for (j = 0; j < max_rows; j++){
-            numbers[i][j].resize(cols);
-        }
-    }
-    rows.clear();
-    rows.resize(fire_count);
-    for (i = 0; i < fire_count; i++) rows[i] = 0;
-    qDebug() << "on_openNormalButton_clicked: msg10";
-
-
-    for (i = 0; i < max_rows; i++){
-        qDebug() << "on_openNormalButton_clicked: msg20: " << i;
-        ui->progressBar->setValue(90 + ((double)i/max_rows)*10);
-        k = data[i][cols].cluster;
-        qDebug() << "on_openNormalButton_clicked: msg21: " << i;
-        for (j = 0; j < cols; j++){
-            qDebug() << "on_openNormalButton_clicked: msg22: " << i << ": " << j;
-            numbers[k][rows[k]][j] = data[i][j].cluster;
-        }
-        qDebug() << "on_openNormalButton_clicked: msg23: " << i;
-        rows[k] += 1;
-    }
-    printNumbers(ui->fuzzyTable,max_rows, 1);
+//        ui->progressBar->setValue(90 + ((double)i/rows)*10);
+    printData();
     ui->progressBar->setValue(100);
 }
 // == End open files ==
@@ -479,14 +402,14 @@ void FPWorth::on_openNormalButton_clicked(){
 // -- Main functions --
 
 
-void FPWorth::makeCTree(QVector< QVector<int> > numbers, int rows){
+void FPWorth::makeCTree(int rows){
     // add first level
     QVector<int> buf;
     int i,j,index;
     QVector< QVector<struct term> > terms;
     index = 0;
-    terms.resize(cols);
-    for (i = 0; i < cols; i++){
+    terms.resize(cols+1);
+    for (i = 0; i < cols+1; i++){
         terms[i].resize(term_counts[i]);
         for (j = 0; j < term_counts[i]; j++){
             terms[i][j].lp_number = i;
@@ -494,20 +417,20 @@ void FPWorth::makeCTree(QVector< QVector<int> > numbers, int rows){
             terms[i][j].support = 0;
         }
         for (j = 0; j < rows; j++){
-            terms[i][numbers[j][i]].support += 1;
+            terms[i][data[j][i].cluster].support += 1;
         }
     }
     buf.append(-1);
-    for (i = 0; i < cols; i++){
+    for (i = 0; i < cols+1; i++){
         for (j = 0; j < term_counts[i]; j++){
             rootCTree->addChild(terms[i][j], 0, buf);
         }
     }
-    rootCTree->makeTree(numbers, rows);
+    rootCTree->makeTree(data, rows);
 }
 
-void FPWorth::findRules(int first, int last, int step){
-    frequentPatterns = rootCTree->assocRules(first, last, step);
+void FPWorth::findRules(int first, int last){
+    frequentPatterns = rootCTree->assocRules(first, last);
     std::sort(frequentPatterns.begin(),frequentPatterns.end(),bySupportPattern);
 }
 
@@ -520,12 +443,13 @@ void FPWorth::printRules(QVector<pattern> fpList){
             str += names[fpList[i].word[j].lp_number] + tr("{%1} и ").arg(fpList[i].word[j].term_number + 1);
         }
         str += names[fpList[i].word[j].lp_number] + tr("{%1}").arg(fpList[i].word[j].term_number + 1);
-        str += tr(", то %1{%2} / %3% : %4 из %5. ")
+        str += tr(", то %1{} / %2 из %3. ")
                 .arg(names.last())
-                .arg(fpList[i].cluster+1)
-                .arg(QString::number(((double)fpList[i].support / fpList[i].count) * 100.0, 'f', 1))
+//                .arg(fpList[i].cluster+1)
+//                .arg(QString::number(((double)fpList[i].support / fpList[i].count) * 100.0, 'f', 1))
                 .arg(QString::number(fpList[i].support))
-                .arg(QString::number(fpList[i].count));
+                .arg(rows);
+//                .arg(QString::number(fpList[i].count));
         str += tr("Номера строк: ");
         for (j = 0; j < fpList[i].str_numbers.size() - 1; j++){
             str += tr("%1, ").arg(fpList[i].str_numbers[j] + 1);
@@ -537,44 +461,36 @@ void FPWorth::printRules(QVector<pattern> fpList){
 
 void FPWorth::on_makeRulesAprioriButton_clicked()
 {
-    int i;
     int cr;
-    QVector<CandidateTree*> rootsCTree;
     ui->makeRulesBar->setValue(0);
     ui->rulesListWidget->clear();
     rulesListIndex_prev = -1;
     fpList.clear();
     // Reading deltas
     writeFromTableToDeltas();
-    countRules[tableComboPrevIndex] = ui->countRulesEdit->text().toInt();
+    countRules = ui->countRulesEdit->text().toInt();
     //--- end --- deltas
     ui->makeRulesBar->setValue(1);
-    for (i = 0; i < fire_count; i++){
-        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90);
-        CandidateTree::levels.clear();
-        frequentPatterns.clear();
-        rootCTree = new CandidateTree(deltas[i], rows[i]);
-        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 5);
-        makeCTree(numbers[i], rows[i]);
-        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 10);
-        findRules(firsts[tableComboPrevIndex], lasts[tableComboPrevIndex], i);
-        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 15);
-        if (countRules[i] != -1){
-            cr = countRules[i];
-            while (cr < (frequentPatterns.size()) &&
-                   frequentPatterns[cr].support < frequentPatterns[cr-1].support + std::numeric_limits<double>::epsilon() &&
-                   frequentPatterns[cr].support > frequentPatterns[cr-1].support - std::numeric_limits<double>::epsilon()){
-                cr += 1;
-            }
-
-            frequentPatterns.resize(min(cr,frequentPatterns.size()));
+    CandidateTree::levels.clear();
+    frequentPatterns.clear();
+    rootCTree = new CandidateTree(deltas, rows);
+    //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 5);
+    makeCTree(rows);
+    //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 10);
+    findRules(first_level, last_level);
+    //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 15);
+    if (countRules != -1){
+        cr = countRules;
+        while (cr < (frequentPatterns.size()) &&
+               frequentPatterns[cr].support < frequentPatterns[cr-1].support + std::numeric_limits<double>::epsilon() &&
+               frequentPatterns[cr].support > frequentPatterns[cr-1].support - std::numeric_limits<double>::epsilon()){
+            cr += 1;
         }
-        fpList += frequentPatterns;
-        //Вывести разделения между правилами и пожары.
-        rootsCTree.append(rootCTree);
+
+        frequentPatterns.resize(min(cr,frequentPatterns.size()));
     }
-    printRules(fpList);
-    rootsCTree.clear();
+    //Вывести разделения между правилами и пожары.
+    printRules(frequentPatterns);
     ui->makeRulesBar->setValue(100);
 }
 
@@ -589,40 +505,15 @@ void FPWorth::on_makePlotButton_clicked(){
     epsx = ui->epsxEdit->text().toDouble();
     maxits = ui->maxitsEdit->text().toDouble();
     diffstep = ui->diffstepEdit->text().toDouble();
+    ui->plotNamesCombo->setCurrentIndex(0);
     j = ui->plotNamesCombo->currentIndex();
     prog_val = 0; ui->plotProgressBar->setValue(prog_val);
     fs = approxGauss(data);
     plot->clear();
     plot->setLegend(names[j]);
-
-    ui->fire1Box_a->setValue(fs[cols][0].a);
-    ui->fire1Box_b->setValue(fs[cols][0].mu);
-    ui->fire1Box_a->setSingleStep(0.01);
-    ui->fire1Box_b->setSingleStep(0.01);
-    ui->fire1Box_a->setEnabled(true);
-    ui->fire1Box_b->setEnabled(true);
-    ui->fire2Box_a->setValue(fs[cols][1].a);
-    ui->fire2Box_b->setValue(fs[cols][1].mu);
-    ui->fire2Box_a->setSingleStep(0.01);
-    ui->fire2Box_b->setSingleStep(0.01);
-    ui->fire2Box_a->setEnabled(true);
-    ui->fire2Box_b->setEnabled(true);
-    ui->fire3Box_a->setValue(fs[cols][2].a);
-    ui->fire3Box_b->setValue(fs[cols][2].mu);
-    ui->fire3Box_a->setSingleStep(0.01);
-    ui->fire3Box_b->setSingleStep(0.01);
-    ui->fire3Box_a->setEnabled(true);
-    ui->fire3Box_b->setEnabled(true);
-    if (fire_count > 3){
-        ui->fire4Box_a->setValue(fs[cols][3].a);
-        ui->fire4Box_b->setValue(fs[cols][3].mu); //these setValues replots.
-        ui->fire4Box_a->setSingleStep(0.01);
-        ui->fire4Box_b->setSingleStep(0.01);
-        ui->fire4Box_a->setEnabled(true);
-        ui->fire4Box_b->setEnabled(true);
+    for (i = 0; i < term_counts[j]; i++){
+        drawTerm(j, i);
     }
-    ui->stepSpin->setValue(0.01);
-    ui->plotNamesCombo->setCurrentIndex(0);
     prog_val = 100; ui->plotProgressBar->setValue(prog_val);
 }
 
@@ -769,7 +660,7 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
                 ks[i][j] > -std::numeric_limits<double>::epsilon()){
                 // Костыль. На случай одного значения в кластере.
                 ret[i][j].a = 5;
-                ret[i][j].mu = 1;
+                ret[i][j].mu = xs[i][j](0,0);
                 if (j == 0){
                     ret[i][j].type = 2;
                 }else if (j == term_counts[i] - 1){
@@ -900,23 +791,19 @@ void FPWorth::ShowContextMenu(const QPoint& pos) // this is a slot
 
 void FPWorth::on_okTermButton_clicked()
 {
-    int i;
-    int size, buf_size, buf_first;
     int first, last;
-    QTableWidgetItem *item;
-    //buf_first = first;
     first = ui->termCountFirst->text().toInt();
     last = ui->termCountLast->text().toInt();
     if (last < first){
         QMessageBox::warning(this, tr("Error"), tr("First > last"));
-        ui->termCountFirst->setValue(firsts[tableComboPrevIndex]);
-        ui->termCountLast->setValue(lasts[tableComboPrevIndex]);
+        ui->termCountFirst->setValue(first_level);
+        ui->termCountLast->setValue(last_level);
         return;
     }
-    firsts[tableComboPrevIndex] = first;
-    lasts[tableComboPrevIndex] = last;
-    deltas[tableComboPrevIndex].resize(last);
-    writeFromDeltasToTable(tableComboPrevIndex);
+    first_level = first;
+    last_level = last;
+    deltas.resize(last);
+    writeFromDeltasToTable();
 }
 
 void FPWorth::on_rulesListWidget_doubleClicked(const QModelIndex &index)
@@ -935,27 +822,22 @@ void FPWorth::on_rulesListWidget_doubleClicked(const QModelIndex &index)
     if (fuzzyTableIndexes_prev.size() > 0){
         fuzzyTableIndexes_prev.resize(0);
     }
-    str = 0;
-    for (j = 0; j < fpList[index.row()].cluster; j++){
-        str+= rows[j];
-    }
-    str += fpList[index.row()].str_numbers[0];
+    str = fpList[index.row()].str_numbers[0];//???
     for (j = 0; j < ui->fuzzyTable->columnCount(); j++){
-        ui->fuzzyTable->item(str,j)->setBackgroundColor(QColor(0,255,0));
+        ui->fuzzyTable->item(str,j)->setBackgroundColor(QColor(100,255,100));
     }
     fuzzyTableIndexes_prev.append(str);
     for (i = 1; i < fpList[index.row()].str_numbers.size(); i++){
-        str -= fpList[index.row()].str_numbers[i-1];
-        str += fpList[index.row()].str_numbers[i];
+        str = fpList[index.row()].str_numbers[i];
         for (j = 0; j < ui->fuzzyTable->columnCount(); j++){
-            ui->fuzzyTable->item(str,j)->setBackgroundColor(QColor(0,255,0));
+            ui->fuzzyTable->item(str,j)->setBackgroundColor(QColor(100,255,100));
         }
         fuzzyTableIndexes_prev.append(str);
     }
     if (rulesListIndex_prev != -1){
         ui->rulesListWidget->item(rulesListIndex_prev)->setBackgroundColor(QColor(255,255,255));
     }
-    ui->rulesListWidget->item(index.row())->setBackgroundColor(QColor(0,255,0));
+    ui->rulesListWidget->item(index.row())->setBackgroundColor(QColor(100,255,100));
     rulesListIndex_prev = index.row();
 }
 
@@ -993,13 +875,14 @@ void FPWorth::on_nnpsButton_clicked(){
     for (i = 0; i < cols; i++){
         xs[i] = ui->inputNnpsTable->item(1,i)->text().toDouble();
     }
-    nnpsCalc(xs, &fire1, &fire2, &prod);
+    //nnpsCalc(xs, &fire1, &fire2, &prod);
     ui->fireCountLabel->setText(QString::number(fire1, 'f', 0));
     ui->fireCountLabel_2->setText(QString::number(fire2, 'f', 0));
     ui->probLabel->setText(QString::number(prod));
     nnpsPlot->setBaseSet(base_set[cols]);
 }
 
+/*
 void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod)
 {
     QVector< QVector<double> > mus;
@@ -1036,7 +919,7 @@ void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double 
     // alphas
     alphas.resize(fire_count);
     max_alphas.resize(fire_count);
-    i = fpList[0].cluster;
+    i = 5; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     max_alpha = 0;
     std::cout << "RULES:" << std::endl;
     for (j = 0; j < fpList.size(); j++)
@@ -1050,7 +933,7 @@ void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double 
         }
         std::cout << std::endl;
         if (ui->suppRulesCheckBox->isChecked()){
-            alpha = min_mu*((double)fpList[j].support/fpList[j].count);//supp(Ri) * min(mus)
+            alpha = min_mu*((double)fpList[j].support/rows);//supp(Ri) * min(mus)
         }else{
             alpha = min_mu;
         }
@@ -1158,6 +1041,7 @@ void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double 
     nnpsPlot->drawVLine(*fire1);
     ui->progressBar_nnps->setValue(100);
 }
+*/
 
 void FPWorth::on_lvarPlotButton_clicked()
 {
@@ -1182,24 +1066,24 @@ void FPWorth::on_clearPlotButton_clicked()
 }
 void FPWorth::writeFromTableToDeltas(){
     int i,j;
-    deltas[tableComboPrevIndex].resize(lasts[tableComboPrevIndex]);
-    for (i = 0; i < firsts[tableComboPrevIndex]-1; i++){
-        deltas[tableComboPrevIndex][i] = 0;
+    deltas.resize(last_level);
+    for (i = 0; i < first_level-1; i++){
+        deltas[i] = 0;
     }
-    for (j = i; j < lasts[tableComboPrevIndex]; j++){
-        deltas[tableComboPrevIndex][j] = ui->supportTable->item(j-i,0)->text().toDouble();
+    for (j = i; j < last_level; j++){
+        deltas[j] = ui->supportTable->item(j-i,0)->text().toDouble();
     }
 }
 
-void FPWorth::writeFromDeltasToTable(int index){
+void FPWorth::writeFromDeltasToTable(){
     int i;
-    ui->supportTable->setRowCount(lasts[index] - firsts[index] + 1);
-    ui->termCountFirst->setValue(firsts[index]);
-    ui->termCountLast->setValue(lasts[index]);
+    ui->supportTable->setRowCount(last_level - first_level + 1);
+    ui->termCountFirst->setValue(first_level);
+    ui->termCountLast->setValue(last_level);
 
-    for (i = firsts[index]-1; i < lasts[index]; i++){
-        ui->supportTable->setItem(i - firsts[index] + 1, 0, new QTableWidgetItem(QString::number(deltas[index][i])));
-        ui->supportTable->setVerticalHeaderItem(i - firsts[index] + 1, new QTableWidgetItem(tr("Уровень %1").arg(i+1)));
+    for (i = first_level-1; i < last_level; i++){
+        ui->supportTable->setItem(i - first_level + 1, 0, new QTableWidgetItem(QString::number(deltas[i])));
+        ui->supportTable->setVerticalHeaderItem(i - first_level + 1, new QTableWidgetItem(tr("Уровень %1").arg(i+1)));
     }
 }
 
@@ -1209,16 +1093,15 @@ void FPWorth::on_tableCombo_currentIndexChanged(int index)
     qDebug() << "on_tableCombo_currentIndexChanged: msg10";
     writeFromTableToDeltas();
     qDebug() << "on_tableCombo_currentIndexChanged: msg20";
-    writeFromDeltasToTable(index);
+    writeFromDeltasToTable();
     qDebug() << "on_tableCombo_currentIndexChanged: msg30";
-    countRules[tableComboPrevIndex] = ui->countRulesEdit->text().toInt();
+    countRules = ui->countRulesEdit->text().toInt();
     qDebug() << "on_tableCombo_currentIndexChanged: msg40";
-    ui->countRulesEdit->setText(QString::number(countRules[index]));
-    tableComboPrevIndex = index;
+    ui->countRulesEdit->setText(QString::number(countRules));
 }
 void FPWorth::on_countRulesEdit_returnPressed()
 {
-    countRules[tableComboPrevIndex] = ui->countRulesEdit->text().toInt();
+    countRules = ui->countRulesEdit->text().toInt();
 }
 
 void FPWorth::on_fire1Box_a_valueChanged(double arg1)
@@ -1416,7 +1299,7 @@ void FPWorth::on_pushButton_clicked()
             xs[i] = splitList[i].toDouble();
         }
         fires = splitList[i].toDouble();
-        nnpsCalc(xs, &fire1, &fire2, &prod);
+        //nnpsCalc(xs, &fire1, &fire2, &prod);
         e1 = fabs(fire1 - fires);
         e2 = fabs(fire2 - fires);
         if (e1 > error1.maxx){

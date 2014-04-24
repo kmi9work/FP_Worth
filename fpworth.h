@@ -130,7 +130,7 @@ private slots:
 
 
 private:
-    void printNumbers(QTableWidget *table, int max_rows, int add, int start_x, int start_y);
+    void printData();
     void splitColumns();
     void makeWords(int **numbers, int rows, int k);
     void makeTree(int rows);
@@ -138,9 +138,9 @@ private:
     void makeRules(int rows, int f);
 
     int cols; // number of lvars without Fires
+    int rows;
 
-    QVector<int> rows;
-    QVector< QVector< QVector<int> > > numbers; // Обыкновенные числа
+    //QVector< QVector< QVector<int> > > numbers; // Обыкновенные числа
     //QVector< QVector<int> > string_numbers;
 
     int global_i;
@@ -148,15 +148,15 @@ private:
     int maxWordSize;
     int *fires;
     QStringList names; // Имена термов
-    QVector<int> firsts, lasts; // уровни, которые нужно вывести
-    int tableComboPrevIndex;
-    QVector<int> countRules;
+    int first_level, last_level; // уровни, которые нужно вывести
+    int countRules; // Количество правил для вывода
+
 
     Ui::FPWorth *ui;
     //FPTree *rootFPTree;
     CandidateTree *rootCTree;
     //QVector<struct level> levels;
-    QVector< QVector<double> > deltas; //minsupp
+    QVector<double> deltas; //minsupps for levels
     QVector<struct pattern> frequentPatterns;
     QVector<struct pattern> fpList;
     QVector< QVector<struct numCluster> > data; // num and cluster all terms(with fire) [max_rows][cols+1]
@@ -181,17 +181,15 @@ private:
     QVector<struct city> cities;
     QMovie *movieRp5;
 
-    void printQVector(QVector<QVector<struct numCluster> > v, int start_x, int start_y);
-
     QVector<QVector<membershipFunction> > approxGauss(QVector< QVector<struct numCluster> > data);
     QStringList readFileToStringList(QString fileName);
-    void makeCTree(QVector<QVector<int> > numbers, int rows);
-    void findRules(int first, int last, int step);
+    void makeCTree(int rows);
+    void findRules(int first, int last);
     void printRules(QVector<pattern> fpList);
     void writeFromTableToDeltas();
-    void writeFromDeltasToTable(int index);
+    void writeFromDeltasToTable();
 
-    void nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod);
+    //void nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod);
     void drawTerm(int i, int j);
 
     QNetworkAccessManager * mgr;
