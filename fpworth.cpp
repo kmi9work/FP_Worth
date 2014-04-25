@@ -55,7 +55,7 @@ FPWorth::FPWorth(QWidget *parent) :
     epsx = ui->epsxEdit->text().toDouble();
     maxits = ui->maxitsEdit->text().toDouble();
     diffstep = ui->diffstepEdit->text().toDouble();
-    ui->rulesListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    ui->rulesTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
     sep = QString(";");
 }
 
@@ -437,26 +437,38 @@ void FPWorth::findRules(int first, int last){
 void FPWorth::printRules(QVector<pattern> fpList){
     int i, j;
     QString str;
+    QTableWidgetItem *item;
+    item = new QTableWidgetItem(QString::number(data[i][j].number));
+    ui->normalTable->setItem(i, j, item);
+
+
+    ui->rulesTable->setRowCount(fpList.size());
     for (i = 0; i < fpList.size(); i++){
-        str = tr("%1. Если ").arg(i);
-        for (j = 0; j < fpList[i].word.size() - 1; j++){
+
+        ui->rulesTable->setItem(i, 0, new QTableWidgetItem(QString::number(i+1))); // № Правила
+        str = QString("");
+        for (j = 0; j < fpList[i].word.size() - 2; j++){
             str += names[fpList[i].word[j].lp_number] + tr("{%1} и ").arg(fpList[i].word[j].term_number + 1);
         }
         str += names[fpList[i].word[j].lp_number] + tr("{%1}").arg(fpList[i].word[j].term_number + 1);
-        str += tr(", %1 из %2. conf: %3 | ")
-//                .arg(names.last())
-//                .arg(fpList[i].cluster+1)
-//                .arg(QString::number(((double)fpList[i].support / fpList[i].count) * 100.0, 'f', 1))
-                .arg(QString::number(fpList[i].support))
-                .arg(rows)
-                .arg(fpList[i].conf);
-//                .arg(QString::number(fpList[i].count));
+        ui->rulesTable->setItem(i, 1, new QTableWidgetItem(str)); // Условие
+        j += 1;
+        str = names[fpList[i].word[j].lp_number] + tr("{%1}").arg(fpList[i].word[j].term_number + 1);
+        ui->rulesTable->setItem(i, 2, new QTableWidgetItem(str)); // Следствие
+        ui->rulesTable->setItem(i, 3, new QTableWidgetItem(
+                                    QString::number((double)fpList[i].support / rows))); // Поддержка
+        ui->rulesTable->setItem(i, 4, new QTableWidgetItem(
+                                    QString::number((double)fpList[i].conf))); // Достоверность
+        ui->rulesTable->setItem(i, 5, new QTableWidgetItem(
+                                    QString::number((double)fpList[i].conf *((double)fpList[i].support / rows)))); // supp*conf
+        /*
         str += tr("Номера строк: ");
         for (j = 0; j < fpList[i].str_numbers.size() - 1; j++){
             str += tr("%1, ").arg(fpList[i].str_numbers[j] + 1);
         }
         str += tr("%1;").arg(fpList[i].str_numbers[j] + 1);
         new QListWidgetItem(str, ui->rulesListWidget);
+        */
     }
 }
 
@@ -464,7 +476,7 @@ void FPWorth::on_makeRulesAprioriButton_clicked()
 {
     int cr;
     ui->makeRulesBar->setValue(0);
-    ui->rulesListWidget->clear();
+    ui->rulesTable->clear();
     rulesListIndex_prev = -1;
     fpList.clear();
     // Reading deltas
@@ -805,6 +817,7 @@ void FPWorth::on_okTermButton_clicked()
 
 void FPWorth::on_rulesListWidget_doubleClicked(const QModelIndex &index)
 {
+    /*
     int i, j;
     int str;
 
@@ -836,6 +849,7 @@ void FPWorth::on_rulesListWidget_doubleClicked(const QModelIndex &index)
     }
     ui->rulesListWidget->item(index.row())->setBackgroundColor(QColor(100,255,100));
     rulesListIndex_prev = index.row();
+    */
 }
 
 void FPWorth::on_clearFuzzyButton_clicked()
