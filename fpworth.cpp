@@ -24,8 +24,6 @@ double QString::toDouble(bool *ok) const{
     return QLocale().toDouble(this);
 }
 
-
-
 FPWorth::FPWorth(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::FPWorth)
