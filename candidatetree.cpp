@@ -59,20 +59,16 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int 
     QVector<int> str_nums;
     int currentSupp;
     int fl;
-    if (data.lp_number == cols){
+    if (data.lp_number == cols-1){
         qDebug() << data.term_number;
     }
-    if (children.empty() && data.lp_number == cols && father != NULL && father->father != NULL){
+    if (children.empty() && data.lp_number == cols-1 && father != NULL && father->father != NULL){
         conf = (double) support / (double)father->support;
         levels[0].append(this);
     }
 
     for (i = 0; i < children.size(); i++){
-        for (j = i + 1; j < children.size(); j++){// ???
-            if (children[j]->data.lp_number == cols){
-
-            }
-
+        for (j = i + 1; j < children.size(); j++){
             currentTerms.clear();
             str_nums.clear();
             currentSupp = 0;

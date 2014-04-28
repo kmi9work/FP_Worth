@@ -427,6 +427,7 @@ void FPWorth::makeCTree(int rows){
 
 void FPWorth::findRules(int first, int last){
     frequentPatterns = rootCTree->assocRules(first, last);
+    qDebug() << frequentPatterns.size();
     std::sort(frequentPatterns.begin(),frequentPatterns.end(),bySupportPattern);
 }
 
