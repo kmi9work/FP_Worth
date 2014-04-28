@@ -159,7 +159,7 @@ private:
     QVector<double> deltas; //minsupps for levels
     QVector<struct pattern> frequentPatterns;
     QVector<struct pattern> fpList;
-    QVector< QVector<struct numCluster> > data; // num and cluster all terms(with fire) [max_rows][cols+1]
+    QVector< QVector<struct numCluster> > data; // num and cluster all terms(with fire) [rows][cols+1]
     QVector< QVector<int> > count_cluster; //Число элементов в кластере.[cols+1][lvar_size]
     QVector< QVector<double> > means; // ядра кластеров.
     QString sep; // separator

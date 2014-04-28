@@ -161,7 +161,6 @@ void FPWorth::on_openFuzzyButton_clicked(){
     int i,j,k;
     int stop_messages = 0;
     QStringList inputStrList, splitList;
-    int max_rows;
 
     sep = ui->sepEdit->text();
     ui->progressBar->setValue(0);
@@ -176,10 +175,9 @@ void FPWorth::on_openFuzzyButton_clicked(){
     inputStrList = readFileToStringList(fileName);
     ui->progressBar->setValue(25);
     if (inputStrList.empty()) return;
-    max_rows = inputStrList.size();
-    //fuzzyTableIndexes_prev.reserve(max_rows);
+    rows = inputStrList.size();
+    //fuzzyTableIndexes_prev.reserve(rows);
     fuzzyTableIndexes_prev.resize(0);
-    rows = max_rows;
     // -- input of numeric --
     data.clear();
     data.resize(rows);
@@ -210,10 +208,9 @@ void FPWorth::on_addNormalButton_clicked()
     QFile csvFile;
     QString fileName;
     QStringList inputStrList, splitList;
-    int max_rows = 0;
     int i,j;
     QTableWidgetItem *item;
-    double m;
+    int current_rows;
     fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("../.."),
                                             tr("CSV Files (*.csv);;Text Files (*.txt)"));
     if (!fileName.isEmpty()){
@@ -234,8 +231,8 @@ void FPWorth::on_addNormalButton_clicked()
         inputStrList.append(in.readLine());
     }
     csvFile.close();
-    max_rows = inputStrList.size();
-    if (max_rows != rows){
+    current_rows = inputStrList.size();
+    if (current_rows != rows){
         QMessageBox::critical(this, tr("Wrong file size"),
                               tr("Wrong size of %1").arg(fileName));
         return;
@@ -269,13 +266,13 @@ void FPWorth::on_addNormalButton_clicked()
     count_cluster.resize(cols);
     for (i = 0; i < cols; i++){
         count_cluster[i].resize(term_counts[i]);
-        for (j = 0; j < max_rows; j++){
+        for (j = 0; j < rows; j++){
             count_cluster[i][data[j][i].cluster] += 1;
         }
     }
     for (i = 0; i < cols; i++){
         means[i].resize(term_counts[i]);
-        for (j = 0; j < max_rows; j++){
+        for (j = 0; j < rows; j++){
             means[i][data[j][i].cluster] += data[j][i].number;
         }
     }
@@ -299,7 +296,6 @@ void FPWorth::on_openNormalButton_clicked(){
     QStringList inputStrList, splitList;
     alglib::real_2d_array workplace;
     struct numCluster buf_nc;
-    int max_rows = 0;
     int buf_int, term_num;
     QTableWidgetItem *item;
     ui->progressBar->setValue(0);
@@ -322,6 +318,9 @@ void FPWorth::on_openNormalButton_clicked(){
     fuzzyTableIndexes_prev.reserve(rows);
     fuzzyTableIndexes_prev.resize(0);
     for (i = 0; i < rows; i++){
+        if (i == rows - 20){
+            k = 1;
+        }
         ui->progressBar->setValue(31 + ((double)i/rows)*30);
         splitList = inputStrList[i].split(sep);
         if (splitList.size() != cols){
@@ -366,7 +365,7 @@ void FPWorth::on_openNormalButton_clicked(){
     for (i = 0; i < cols; i++){
         ui->progressBar->setValue(60 + ((double)i/cols)*30);
         qSort(data.begin(), data.end(), ByColumn(i));// !!!
-        for (j = 0; j < max_rows; j++){
+        for (j = 0; j < rows; j++){
             workplace[j][0] = data[j][i].number;
         }
         alglib::clusterizersetpoints(s, workplace, 2);
