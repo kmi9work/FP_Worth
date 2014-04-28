@@ -95,7 +95,7 @@ void FPWorth::printData(){
         for (j = 0; j < cols; j++){
             item = new QTableWidgetItem(QString::number(data[i][j].number));
             ui->normalTable->setItem(i, j, item);
-            item = new QTableWidgetItem(QString::number(data[i][j].cluster));
+            item = new QTableWidgetItem(QString::number(data[i][j].cluster + 1));
             ui->fuzzyTable->setItem(i, j, item);
         }
     }
