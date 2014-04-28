@@ -28,7 +28,6 @@ FPWorth::FPWorth(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::FPWorth)
 {
-    int i;
     ui->setupUi(this);
     ui->lvarSettings->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->lvarSettings, SIGNAL(customContextMenuRequested(const QPoint&)),
@@ -83,17 +82,17 @@ void FPWorth::printData(){
     int i,j;
     QTableWidgetItem *item;
     ui->normalTable->setRowCount(rows);
-    ui->normalTable->setColumnCount(cols+1);
+    ui->normalTable->setColumnCount(cols);
     ui->fuzzyTable->setRowCount(rows);
-    ui->fuzzyTable->setColumnCount(cols+1);
-    for (i = 0; i < cols + 1; i++){
+    ui->fuzzyTable->setColumnCount(cols);
+    for (i = 0; i < cols; i++){
         item = new QTableWidgetItem(names[i]);
         ui->normalTable->setHorizontalHeaderItem(i, item);
         item = new QTableWidgetItem(names[i]);
         ui->fuzzyTable->setHorizontalHeaderItem(i, item);
     }
     for (i = 0; i < rows; i++){
-        for (j = 0; j < cols + 1; j++){
+        for (j = 0; j < cols; j++){
             item = new QTableWidgetItem(QString::number(data[i][j].number));
             ui->normalTable->setItem(i, j, item);
             item = new QTableWidgetItem(QString::number(data[i][j].cluster));
@@ -120,11 +119,11 @@ QStringList FPWorth::readFileToStringList(QString fileName){
     QTextStream in(&csvFile);
     names.clear();
     names = in.readLine().split(sep);
-    cols = names.size() - 1; // -Fires
+    cols = names.size();
     ui->inputNnpsTable->clear();
-    ui->inputNnpsTable->setColumnCount(cols);
+    ui->inputNnpsTable->setColumnCount(cols - 1);
     ui->plotNamesCombo->clear();
-    for (i = 0; i < cols; i++){
+    for (i = 0; i < cols-1; i++){
         item = new QTableWidgetItem(names[i]);
         ui->inputNnpsTable->setItem(0,i,item);
         ui->plotNamesCombo->addItem(names[i]);
@@ -133,11 +132,11 @@ QStringList FPWorth::readFileToStringList(QString fileName){
 
     buf_list = in.readLine().split(sep);
     term_counts.clear();
-    term_counts.resize(cols+1);
-    for (i = 0; i < cols + 1; i++){
+    term_counts.resize(cols);
+    for (i = 0; i < cols; i++){
         term_counts[i] = buf_list[i].toInt();
     }
-    fire_count = term_counts[cols];
+    fire_count = term_counts[cols-1];
 
     countRules = 5;
     first_level = 3;
@@ -153,7 +152,6 @@ QStringList FPWorth::readFileToStringList(QString fileName){
     }
     csvFile.close();
     //== End read file ==
-    ui->inputNnpsTable->setColumnCount(cols);
     return ret;
 }
 
@@ -189,12 +187,12 @@ void FPWorth::on_openFuzzyButton_clicked(){
     for (i = 0; i < rows; i++){
         ui->progressBar->setValue(30 + ((double)i/rows)*50);
         splitList = inputStrList.at(i).split(sep);
-        if (splitList.size() != (cols+1) && stop_messages < 5){
+        if (splitList.size() != (cols) && stop_messages < 5){
             QMessageBox::warning(this, tr("Error"), tr("Wrong size of %1'th row.").arg(i));
             stop_messages += 1;
             return;
         }
-        data[i].resize(cols+1);
+        data[i].resize(cols);
         for (j = 0; j < splitList.size() - 1; j++){
             data[i][j].cluster = splitList.at(j).toInt() - 1;
         }
@@ -245,7 +243,7 @@ void FPWorth::on_addNormalButton_clicked()
 
     for (i = 0; i < rows; i++){
         splitList = inputStrList[i].split(sep);
-        if (splitList.size() != cols + 1){
+        if (splitList.size() != cols){
             QMessageBox::critical(this, tr("Error in line size"),
                                   tr("Wrong size of %1'th row. Cols: %2, Size: %3")
                                   .arg(i).arg(cols).arg(splitList.size()));
@@ -257,7 +255,7 @@ void FPWorth::on_addNormalButton_clicked()
     }
     // -- Print normal data to normalTable --
     ui->normalTable->clear();
-    ui->normalTable->setColumnCount(cols + 1); // + Fires
+    ui->normalTable->setColumnCount(cols);
     ui->normalTable->setRowCount(rows);
     for (i = 0; i < names.size(); i++){
         item = new QTableWidgetItem(names[i]);
@@ -266,22 +264,22 @@ void FPWorth::on_addNormalButton_clicked()
 
     // ------
     means.clear();
-    means.resize(cols+1);
+    means.resize(cols);
     count_cluster.clear();
-    count_cluster.resize(cols+1);
-    for (i = 0; i < cols + 1; i++){
+    count_cluster.resize(cols);
+    for (i = 0; i < cols; i++){
         count_cluster[i].resize(term_counts[i]);
         for (j = 0; j < max_rows; j++){
             count_cluster[i][data[j][i].cluster] += 1;
         }
     }
-    for (i = 0; i < cols + 1; i++){
+    for (i = 0; i < cols; i++){
         means[i].resize(term_counts[i]);
         for (j = 0; j < max_rows; j++){
             means[i][data[j][i].cluster] += data[j][i].number;
         }
     }
-    for (i = 0; i < cols + 1; i++){
+    for (i = 0; i < cols; i++){
         for (j = 0; j < term_counts[i]; j++){
             if (count_cluster[i][j] > 0){
                 means[i][j] /= count_cluster[i][j];
@@ -326,7 +324,7 @@ void FPWorth::on_openNormalButton_clicked(){
     for (i = 0; i < rows; i++){
         ui->progressBar->setValue(31 + ((double)i/rows)*30);
         splitList = inputStrList[i].split(sep);
-        if (splitList.size() != cols + 1){
+        if (splitList.size() != cols){
             QMessageBox::critical(this, tr("Error in line size"),
                                   tr("Wrong size of %1'th row. Cols: %2, Size: %3")
                                   .arg(i).arg(cols).arg(splitList.size()));
@@ -340,14 +338,14 @@ void FPWorth::on_openNormalButton_clicked(){
     }
     ui->progressBar->setValue(60);
     // -- Print normal data to normalTable --
-    ui->normalTable->setColumnCount(cols + 1); // + Fires
+    ui->normalTable->setColumnCount(cols); // + Fires
     ui->normalTable->setRowCount(rows);
     for (i = 0; i < names.size(); i++){
         item = new QTableWidgetItem(names[i]);
         ui->normalTable->setHorizontalHeaderItem(i, item);
     }
     for (i = 0; i < rows; i++){
-        for (j = 0; j < cols + 1; j++){
+        for (j = 0; j < cols; j++){
             item = new QTableWidgetItem(QString::number(data[i][j].number));
             ui->normalTable->setItem(i, j, item);
         }
@@ -361,12 +359,12 @@ void FPWorth::on_openNormalButton_clicked(){
     alglib::clusterizersetkmeanslimits(s, 100, 0);
     workplace.setlength(rows, 1);
     means.clear();
-    means.resize(cols + 1);
+    means.resize(cols);
     count_cluster.clear();
-    count_cluster.resize(cols+1);
-    for (i = 0; i < cols + 1; i++) count_cluster[i].resize(term_counts[i]);
-    for (i = 0; i < cols + 1; i++){
-        ui->progressBar->setValue(60 + ((double)i/cols + 1)*30);
+    count_cluster.resize(cols);
+    for (i = 0; i < cols; i++) count_cluster[i].resize(term_counts[i]);
+    for (i = 0; i < cols; i++){
+        ui->progressBar->setValue(60 + ((double)i/cols)*30);
         qSort(data.begin(), data.end(), ByColumn(i));// !!!
         for (j = 0; j < max_rows; j++){
             workplace[j][0] = data[j][i].number;
@@ -406,8 +404,8 @@ void FPWorth::makeCTree(int rows){
     int i,j,index;
     QVector< QVector<struct term> > terms;
     index = 0;
-    terms.resize(cols+1);
-    for (i = 0; i < cols+1; i++){
+    terms.resize(cols);
+    for (i = 0; i < cols; i++){
         terms[i].resize(term_counts[i]);
         for (j = 0; j < term_counts[i]; j++){
             terms[i][j].lp_number = i;
@@ -419,7 +417,7 @@ void FPWorth::makeCTree(int rows){
         }
     }
     buf.append(-1);
-    for (i = 0; i < cols+1; i++){
+    for (i = 0; i < cols; i++){
         for (j = 0; j < term_counts[i]; j++){
             rootCTree->addChild(terms[i][j], 0, buf);
         }
@@ -439,7 +437,13 @@ void FPWorth::printRules(QVector<pattern> fpList){
     item = new QTableWidgetItem(QString::number(data[i][j].number));
     ui->normalTable->setItem(i, j, item);
 
-
+    ui->rulesTable->setColumnCount(6);
+    ui->rulesTable->setHorizontalHeaderItem(0, new QTableWidgetItem(QString("№")));
+    ui->rulesTable->setHorizontalHeaderItem(1, new QTableWidgetItem(QString("Условие")));
+    ui->rulesTable->setHorizontalHeaderItem(2, new QTableWidgetItem(QString("Следствие")));
+    ui->rulesTable->setHorizontalHeaderItem(3, new QTableWidgetItem(QString("Поддержка")));
+    ui->rulesTable->setHorizontalHeaderItem(4, new QTableWidgetItem(QString("Достоверность")));
+    ui->rulesTable->setHorizontalHeaderItem(5, new QTableWidgetItem(QString("Supp*Conf")));
     ui->rulesTable->setRowCount(fpList.size());
     for (i = 0; i < fpList.size(); i++){
 
@@ -468,6 +472,7 @@ void FPWorth::printRules(QVector<pattern> fpList){
         new QListWidgetItem(str, ui->rulesListWidget);
         */
     }
+    ui->rulesTable->resizeColumnsToContents();
 }
 
 void FPWorth::on_makeRulesAprioriButton_clicked()
@@ -583,7 +588,7 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
     //double *mu, double *sigma, double k, int index)
     //returns eps?
     QVector< QVector<struct membershipFunction> > ret;
-    QVector< QVector<alglib::real_2d_array> > xs; //rows*(cols+1)
+    QVector< QVector<alglib::real_2d_array> > xs; //rows*(cols)
     QVector< QVector<alglib::real_1d_array> > ys;
     QVector< QVector<alglib::real_1d_array> > cs; //[0] = mu, [1] = sigma
     QVector< QVector<double> > ks;
@@ -597,13 +602,13 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
     double max_k;
     double locality = 2.5;
     int prog_val;
-    xs.resize(cols+1);
-    ys.resize(cols+1);
-    cs.resize(cols+1);
-    ks.resize(cols+1);
-    ret.resize(cols+1);
-    indexes.resize(cols+1);
-    for (j = 0; j < cols+1; j++){
+    xs.resize(cols);
+    ys.resize(cols);
+    cs.resize(cols);
+    ks.resize(cols);
+    ret.resize(cols);
+    indexes.resize(cols);
+    for (j = 0; j < cols; j++){
         xs[j].resize(term_counts[j]);
         ys[j].resize(term_counts[j]);
         cs[j].resize(term_counts[j]);
@@ -615,8 +620,8 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
         }
     }
     prog_val = 5; ui->plotProgressBar->setValue(prog_val);
-    for (i = 0; i < cols+1; i++){
-        prog_val = 5 + ((double)i/(cols+1))*10; ui->plotProgressBar->setValue(prog_val);
+    for (i = 0; i < cols; i++){
+        prog_val = 5 + ((double)i/(cols))*10; ui->plotProgressBar->setValue(prog_val);
         for (j = 0; j < term_counts[i]; j++){
             xs[i][j].setlength(count_cluster[i][j],1);
             // Длина real_2d_array для каждого кластера равна количеству эл-тов в кластере.
@@ -640,9 +645,9 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
     // Data больше не нужна.
 
     // Для этого сначала нужно вычислить k.
-    base_set.resize(cols + 1);
-    for (i = 0; i < cols + 1; i++){
-        prog_val = 35 + ((double)i/(cols+1))*20; ui->plotProgressBar->setValue(prog_val);
+    base_set.resize(cols);
+    for (i = 0; i < cols; i++){
+        prog_val = 35 + ((double)i/(cols))*20; ui->plotProgressBar->setValue(prog_val);
         base_set[i].resize(2);
         base_set[i][0] = xs[i][0](0,0);
         base_set[i][1] = xs[i][0](0,0);
@@ -664,8 +669,8 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
     }
     // Для каждого из xs вычислить ys.
     // Записать cs для каждого.
-    for (i = 0; i < cols + 1; i++){
-        prog_val = 55 + ((double)i/(cols+1))*40; ui->plotProgressBar->setValue(prog_val);
+    for (i = 0; i < cols; i++){
+        prog_val = 55 + ((double)i/(cols))*40; ui->plotProgressBar->setValue(prog_val);
         for (j = 0; j < term_counts[i]; j++){
             if (ks[i][j] <  std::numeric_limits<double>::epsilon() &&
                 ks[i][j] > -std::numeric_limits<double>::epsilon()){
@@ -704,11 +709,11 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
                 cs[i][j][0] = means[i][j]; // +- k/2
                 cs[i][j][1] = dispersio(ys[i][j]);
             }
-            prog_val = 55 + ((double)i/(cols+1))*40 + 1; ui->plotProgressBar->setValue(prog_val);
+            prog_val = 55 + ((double)i/(cols))*40 + 1; ui->plotProgressBar->setValue(prog_val);
             alglib::lsfitcreatef(xs[i][j], ys[i][j], cs[i][j], diffstep, state);
-            prog_val = 55 + ((double)i/(cols+1))*40 + 2; ui->plotProgressBar->setValue(prog_val);
+            prog_val = 55 + ((double)i/(cols))*40 + 2; ui->plotProgressBar->setValue(prog_val);
             alglib::lsfitsetcond(state, epsf, epsx, maxits);
-            prog_val = 55 + ((double)i/(cols+1))*40 + 3; ui->plotProgressBar->setValue(prog_val);
+            prog_val = 55 + ((double)i/(cols))*40 + 3; ui->plotProgressBar->setValue(prog_val);
             if (j == 0){
                 ret[i][j].type = 2;
                 alglib::lsfitfit(state, function_cx_NE_func);
@@ -719,9 +724,9 @@ QVector< QVector<struct membershipFunction> > FPWorth::approxGauss(QVector< QVec
                 ret[i][j].type = 0;
                 alglib::lsfitfit(state, function_cx_G_func);
             }
-            prog_val = 55 + ((double)i/(cols+1))*40 + 4; ui->plotProgressBar->setValue(prog_val);
+            prog_val = 55 + ((double)i/(cols))*40 + 4; ui->plotProgressBar->setValue(prog_val);
             alglib::lsfitresults(state, info, cs[i][j], rep);
-            prog_val = 55 + ((double)i/(cols+1))*40 + 5; ui->plotProgressBar->setValue(prog_val);
+            prog_val = 55 + ((double)i/(cols))*40 + 5; ui->plotProgressBar->setValue(prog_val);
             err = rep.rmserror;
 
             //========
@@ -880,15 +885,15 @@ void FPWorth::on_nnpsButton_clicked(){
     QVector<double> xs;
     double fire1, fire2, prod;
     int i;
-    xs.resize(cols);
-    for (i = 0; i < cols; i++){
+    xs.resize(cols-1);
+    for (i = 0; i < cols-1; i++){
         xs[i] = ui->inputNnpsTable->item(1,i)->text().toDouble();
     }
     //nnpsCalc(xs, &fire1, &fire2, &prod);
     ui->fireCountLabel->setText(QString::number(fire1, 'f', 0));
     ui->fireCountLabel_2->setText(QString::number(fire2, 'f', 0));
     ui->probLabel->setText(QString::number(prod));
-    nnpsPlot->setBaseSet(base_set[cols]);
+    nnpsPlot->setBaseSet(base_set[cols-1]);
 }
 
 /*
@@ -1116,7 +1121,7 @@ void FPWorth::on_countRulesEdit_returnPressed()
 void FPWorth::on_fire1Box_a_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][0].a = ui->fire1Box_a->value();
+    fs[cols-1][0].a = ui->fire1Box_a->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1128,7 +1133,7 @@ void FPWorth::on_fire1Box_a_valueChanged(double arg1)
 void FPWorth::on_fire1Box_b_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][0].mu = ui->fire1Box_b->value();
+    fs[cols-1][0].mu = ui->fire1Box_b->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1140,7 +1145,7 @@ void FPWorth::on_fire1Box_b_valueChanged(double arg1)
 void FPWorth::on_fire2Box_a_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][1].a = ui->fire2Box_a->value();
+    fs[cols-1][1].a = ui->fire2Box_a->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1152,7 +1157,7 @@ void FPWorth::on_fire2Box_a_valueChanged(double arg1)
 void FPWorth::on_fire2Box_b_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][1].mu = ui->fire2Box_b->value();
+    fs[cols-1][1].mu = ui->fire2Box_b->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1164,7 +1169,7 @@ void FPWorth::on_fire2Box_b_valueChanged(double arg1)
 void FPWorth::on_fire3Box_a_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][2].a = ui->fire3Box_a->value();
+    fs[cols-1][2].a = ui->fire3Box_a->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1176,7 +1181,7 @@ void FPWorth::on_fire3Box_a_valueChanged(double arg1)
 void FPWorth::on_fire3Box_b_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][2].mu = ui->fire3Box_b->value();
+    fs[cols-1][2].mu = ui->fire3Box_b->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1188,7 +1193,7 @@ void FPWorth::on_fire3Box_b_valueChanged(double arg1)
 void FPWorth::on_fire4Box_a_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][3].a = ui->fire4Box_a->value();
+    fs[cols-1][3].a = ui->fire4Box_a->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1206,7 +1211,7 @@ void FPWorth::drawTerm(int i, int j){
 void FPWorth::on_fire4Box_b_valueChanged(double arg1)
 {
     int i,j;
-    fs[cols][3].mu = ui->fire4Box_b->value();
+    fs[cols-1][3].mu = ui->fire4Box_b->value();
     plot->clear();
     j = ui->plotNamesCombo->currentIndex();
     //fs = approxGauss(data);
@@ -1285,7 +1290,7 @@ void FPWorth::on_pushButton_clicked()
     in.readLine();
     in.readLine();
     xs.clear();
-    xs.resize(cols);
+    xs.resize(cols-1);
     fires1_error = 0;
     count = 0;
     error1.minn = 1000;
@@ -1300,7 +1305,7 @@ void FPWorth::on_pushButton_clicked()
     while (!in.atEnd()){
         inputLine = in.readLine();
         splitList = inputLine.split(sep);
-        if (splitList.size() > cols + 1){
+        if (splitList.size() > cols){
             QMessageBox::critical(this, tr("Error"), tr("Wrong cols count"));
             return;
         }
@@ -1438,11 +1443,11 @@ void FPWorth::customMenuRequested(QPoint pos){
 
 void FPWorth::on_magicButton_clicked()
 {
-    fs[cols][0].a = 16.93;
+    fs[cols-1][0].a = 16.93;
     ui->fire1Box_a->setValue(16.93);
-    fs[cols][0].mu = 0.3;
+    fs[cols-1][0].mu = 0.3;
     ui->fire1Box_b->setValue(0.3);
-    fs[cols][2].a = 2.991;
+    fs[cols-1][2].a = 2.991;
     ui->fire3Box_a->setValue(2.991);
 }
 
