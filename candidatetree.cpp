@@ -15,12 +15,13 @@ CandidateTree::CandidateTree(QVector<double> ds, int rs)
     levels.resize(1);
 }
 
-void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
+int CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
 {
     CandidateTree *ct;// String Numbers!!!
     if (level == -1){
         if ((double)d.support / rows > deltas[0]){
             ct = new CandidateTree(deltas, rows);
+            if (ct == NULL) return -1;
             ct->father = this;
             ct->data = d;
             ct->level = level + 1;
@@ -35,6 +36,7 @@ void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
         }
     }else{//if ((double)min(support, d.support)/rows > deltas[min(level + 1, deltas.size() - 1)]){
         ct = new CandidateTree(deltas, rows);
+        if (ct == NULL) return -1;
         ct->father = this;
         ct->data = d;
         ct->level = level + 1;
@@ -47,10 +49,11 @@ void CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
         }
         levels[ct->level].append(ct);*/
     }
+    return 0;
 }
 
 
-void CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int rows, int cols)
+int CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int rows, int cols)
 
 {
     int i, j, k, l;
@@ -58,10 +61,8 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int 
     QVector<struct term> currentTerms;
     QVector<int> str_nums;
     int currentSupp;
-    int fl;
-    if (data.lp_number == cols-1){
-        qDebug() << data.term_number;
-    }
+    int fl, ret;
+    ret = 0;
     if (children.empty() && data.lp_number == cols-1 && father != NULL && father->father != NULL){
         conf = (double) support / (double)father->support;
         levels[0].append(this);
@@ -93,11 +94,12 @@ void CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int 
                 }
             }
             if ((double)currentSupp / rows > deltas[min(currentTerms.size() - 1, deltas.size() - 1)]){
-                children[i]->addChild(children[j]->data, currentSupp, str_nums);
+                if (children[i]->addChild(children[j]->data, currentSupp, str_nums) == -1) return -1;
             }
         }
-        children[i]->makeTree(records, rows, cols);
+        if (children[i]->makeTree(records, rows, cols) == -1) return -1;
     }
+    return 0;
 }
 
 QVector<struct pattern> CandidateTree::assocRules(int first, int last)

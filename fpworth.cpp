@@ -397,7 +397,7 @@ void FPWorth::on_openNormalButton_clicked(){
 // -- Main functions --
 
 
-void FPWorth::makeCTree(int rows){
+int FPWorth::makeCTree(int rows){
     // add first level
     QVector<int> buf;
     int i,j,index;
@@ -418,15 +418,22 @@ void FPWorth::makeCTree(int rows){
     buf.append(-1);
     for (i = 0; i < cols; i++){
         for (j = 0; j < term_counts[i]; j++){
-            rootCTree->addChild(terms[i][j], 0, buf);
+            if (rootCTree->addChild(terms[i][j], 0, buf) == -1){
+                QMessageBox::critical(this, tr("Error"), tr("Not enought memory!"));
+                return -1;
+            }
         }
     }
-    rootCTree->makeTree(data, rows, cols);
+    if (rootCTree->makeTree(data, rows, cols) == -1){
+        QMessageBox::critical(this, tr("Error"), tr("Not enought memory!"));
+        return -1;
+    }
+    return 0;
 }
 
 void FPWorth::findRules(int first, int last){
     frequentPatterns = rootCTree->assocRules(first, last);
-    qDebug() << frequentPatterns.size();
+    qDebug() << "findRules: frequentPatterns.size() = " << frequentPatterns.size();
     std::sort(frequentPatterns.begin(),frequentPatterns.end(),bySupportPattern);
 }
 
@@ -434,8 +441,6 @@ void FPWorth::printRules(QVector<pattern> fpList){
     int i, j;
     QString str;
     QTableWidgetItem *item;
-    item = new QTableWidgetItem(QString::number(data[i][j].number));
-    ui->normalTable->setItem(i, j, item);
 
     ui->rulesTable->setColumnCount(6);
     ui->rulesTable->setHorizontalHeaderItem(0, new QTableWidgetItem(QString("№")));
@@ -481,7 +486,6 @@ void FPWorth::on_makeRulesAprioriButton_clicked()
     ui->makeRulesBar->setValue(0);
     ui->rulesTable->clear();
     rulesListIndex_prev = -1;
-    fpList.clear();
     // Reading deltas
     writeFromTableToDeltas();
     countRules = ui->countRulesEdit->text().toInt();
@@ -491,7 +495,10 @@ void FPWorth::on_makeRulesAprioriButton_clicked()
     frequentPatterns.clear();
     rootCTree = new CandidateTree(deltas, rows);
     //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 5);
-    makeCTree(rows);
+    if (makeCTree(rows) == -1){
+        QMessageBox::critical(this, tr("Error"), tr("Not enought memory!"));
+        return;
+    }
     //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 10);
     findRules(first_level, last_level);
     //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 15);
@@ -889,32 +896,31 @@ void FPWorth::on_nnpsButton_clicked(){
     for (i = 0; i < cols-1; i++){
         xs[i] = ui->inputNnpsTable->item(1,i)->text().toDouble();
     }
-    //nnpsCalc(xs, &fire1, &fire2, &prod);
+    nnpsCalc(xs, &fire1, &fire2, &prod);
     ui->fireCountLabel->setText(QString::number(fire1, 'f', 0));
     ui->fireCountLabel_2->setText(QString::number(fire2, 'f', 0));
     ui->probLabel->setText(QString::number(prod));
     nnpsPlot->setBaseSet(base_set[cols-1]);
 }
 
-/*
+
 void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod)
 {
     QVector< QVector<double> > mus;
-    QVector< QVector<double> > alphas;
     int accuracy = 10000;
-    double eps = 1.0 / accuracy;
     double step;
+    int fire_cluster;
     int i, j, l, maxf_i, maxf_i_prev;
     double min_mu, alpha, max_alpha, min_beta, maxf;
     double f;
-    double integral_summ, center, integral_summ_num, integral_summ_denum;
+    double integral_summ, center, integral_summ_num, integral_summ_denum, integral_summ_y;
     QColor line_color;
     double point;
     QVector<double> max_alphas;
     ui->progressBar_nnps->setValue(10);
-    mus.resize(cols);
+    mus.resize(cols-1);
     std::cout << "MUS:" << std::endl;
-    for (i = 0; i < cols; i++){
+    for (i = 0; i < cols-1; i++){
         ui->progressBar_nnps->setValue(10 + ((double)i/cols)*20);
         mus[i].resize(term_counts[i]);
         for (j = 0; j < term_counts[i]; j++){
@@ -931,62 +937,56 @@ void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double 
     }
     ui->progressBar_nnps->setValue(30);
     // alphas
-    alphas.resize(fire_count);
     max_alphas.resize(fire_count);
     i = 5; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     max_alpha = 0;
-    std::cout << "RULES:" << std::endl;
-    for (j = 0; j < fpList.size(); j++)
+//    std::cout << "RULES:" << std::endl;
+    for (j = 0; j < frequentPatterns.size(); j++)
     {
-        ui->progressBar_nnps->setValue(30 + ((double)j/fpList.size())*40);
+        fire_cluster = frequentPatterns[j].word.last().term_number;
+        ui->progressBar_nnps->setValue(30 + ((double)j/frequentPatterns.size())*40);
         min_mu = 1;
-        for (l = 0; l < fpList[j].word.size(); l++)
+        for (l = 0; l < frequentPatterns[j].word.size()-1; l++)
         { // min mus for rule
-            std::cout << mus[fpList[j].word[l].lp_number][fpList[j].word[l].term_number] << "; ";
-            min_mu = min(mus[fpList[j].word[l].lp_number][fpList[j].word[l].term_number], min_mu);
+//            std::cout << mus[frequentPatterns[j].word[l].lp_number][frequentPatterns[j].word[l].term_number] << "; ";
+            min_mu = min(mus[frequentPatterns[j].word[l].lp_number][frequentPatterns[j].word[l].term_number], min_mu);
         }
-        std::cout << std::endl;
+//        std::cout << std::endl;
         if (ui->suppRulesCheckBox->isChecked()){
-            alpha = min_mu*((double)fpList[j].support/rows);//supp(Ri) * min(mus)
+            alpha = min_mu*((double)frequentPatterns[j].support/rows);//supp(Ri) * min(mus)
         }else{
             alpha = min_mu;
         }
-
-        if (fpList[j].cluster != i){
-            max_alphas[i] = max_alpha; // For each Fire.
-            std::cout << "Beta: " << max_alpha << std::endl;
-            max_alpha = 0;
-            i = fpList[j].cluster;
-        }
-        max_alpha = max(max_alpha, alpha);//max alpha from all the rules
-        alphas[fpList[j].cluster].append(alpha);
+        max_alphas[fire_cluster] = max(max_alphas[fire_cluster], alpha);//max alpha from all the rules
     }
-    max_alphas[fpList[j-1].cluster] = max_alpha; // For each Fire.
-    std::cout << "Beta: " << max_alpha << std::endl;
+//    std::cout << "Beta: " << max_alpha << std::endl;
     ui->progressBar_nnps->setValue(70);
 
     //integrate
     maxf_i_prev = 0;
     maxf_i = 0;
     integral_summ = 0;
-    step = (base_set[cols][1] - base_set[cols][0])/accuracy;
+    step = (base_set[cols-1][1] - base_set[cols-1][0])/(double)accuracy;
     nnpsPlot->clear();
-    for (point = base_set[cols][0]; point < base_set[cols][1]; point += step){
-        ui->progressBar_nnps->setValue(70 + (point/(base_set[cols][1] - base_set[cols][0])*20));
+    for (point = base_set[cols-1][0]; point < base_set[cols-1][1]; point += step){
+        ui->progressBar_nnps->setValue(70 + (point/(base_set[cols-1][1] - base_set[cols-1][0])*20));
         maxf = 0;
         //Пройти по всем из fire_count. Найти максимум. Потом минимум его и mu.
         for (i = 0; i < fire_count; i++){
-            if (fs[cols][i].type == 0){
-                f = min(funcGauss(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
-            }else if (fs[cols][i].type == 1){
-                f = min(funcE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+            if (fs[cols-1][i].type == 0){
+                f = min(funcGauss(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
+            }else if (fs[cols-1][i].type == 1){
+                f = min(funcE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }else{
-                f = min(funcNE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+                f = min(funcNE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }
             if (f > maxf){
                 maxf = f;
                 maxf_i = i;
             }
+        }
+        if (maxf > 1 || maxf < 0){
+            qDebug() << "1 nnpsCalc: MAXF > 1 || < 0 => " << maxf;
         }
         nnpsPlot->addPoint(point, maxf);// ADD COLOR
         // Когда меняется maxf_i, тогда рисовать полученный на этапе набор точек. Предыдущий набор стирать.
@@ -997,65 +997,72 @@ void FPWorth::nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double 
         }
         maxf_i_prev = maxf_i;
     }
+    qDebug() << "nnpsCalc: integral_summ = " << integral_summ;
     line_color = getColor(maxf_i_prev);
     nnpsPlot->drawLine(line_color);
     //nnpsPlot->drawPoints();
     center = 0;
-    for (point = base_set[cols][0]; point < base_set[cols][1]; point += step){
-        ui->progressBar_nnps->setValue(90 + (point/(base_set[cols][1] - base_set[cols][0])*9));
+    for (point = base_set[cols-1][0]; point < base_set[cols-1][1]; point += step){
+        ui->progressBar_nnps->setValue(90 + (point/(base_set[cols-1][1] - base_set[cols-1][0])*9));
         maxf = 0;
         //Пройти по всем из fire_count. Найти максимум. Потом минимум его и mu.
         for (i = 0; i < fire_count; i++){
-            if (fs[cols][i].type == 0){
-                f = min(funcGauss(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
-            }else if (fs[cols][i].type == 1){
-                f = min(funcE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+            if (fs[cols-1][i].type == 0){
+                f = min(funcGauss(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
+            }else if (fs[cols-1][i].type == 1){
+                f = min(funcE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }else{
-                f = min(funcNE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+                f = min(funcNE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }
             if (f > maxf){
                 maxf = f;
                 maxf_i = i;
             }
+        }
+        if (maxf > 1 || maxf < 0){
+            qDebug() << "2 nnpsCalc: MAXF > 1 || < 0 => " << maxf;
         }
         center += step*maxf;
         if (center > integral_summ/2) break;
     }
     center = point;
-    min_beta = 1;
-    ui->progressBar_nnps->setValue(99);
-    for (i = 0; i < fire_count; i++){
-        if (max_alphas[i] < min_beta) min_beta = max_alphas[i];
-    }
-    *prod = min_beta;
+
     *fire1 = center;
     //Another way. ----------------------
     integral_summ_num = 0;
     integral_summ_denum = 0;
-    for (point = base_set[cols][0]; point < base_set[cols][1]; point += step){
+    integral_summ_y = 0;
+    for (point = base_set[cols-1][0]; point < base_set[cols-1][1]; point += step){
         maxf = 0;
         //Пройти по всем из fire_count. Найти максимум. Потом минимум его и mu.
         for (i = 0; i < fire_count; i++){
-            if (fs[cols][i].type == 0){
-                f = min(funcGauss(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
-            }else if (fs[cols][i].type == 1){
-                f = min(funcE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+            if (fs[cols-1][i].type == 0){
+                f = min(funcGauss(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
+            }else if (fs[cols-1][i].type == 1){
+                f = min(funcE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }else{
-                f = min(funcNE(point, fs[cols][i].a, fs[cols][i].mu), max_alphas[i]);
+                f = min(funcNE(point, fs[cols-1][i].a, fs[cols-1][i].mu), max_alphas[i]);
             }
             if (f > maxf){
                 maxf = f;
                 maxf_i = i;
             }
         }
+        if (maxf > 1 || maxf < 0){
+            qDebug() << "3 nnpsCalc: MAXF > 1 || < 0 => " << maxf;
+        }
         integral_summ_num += step*maxf*point;
         integral_summ_denum += step*maxf;
+        integral_summ_y += maxf*maxf*step;
     }
+    qDebug() << "nnpsCalc: integral_summ_num = " << integral_summ_num;
+    qDebug() << "nnpsCalc: integral_summ_denum = " << integral_summ_denum;
+    qDebug() << "nnpsCalc: integral_summ_y = " << integral_summ_y;
     *fire2 = integral_summ_num / integral_summ_denum;
-    nnpsPlot->drawVLine(*fire1);
+    *prod = integral_summ_y / (2*integral_summ_denum);
     ui->progressBar_nnps->setValue(100);
 }
-*/
+
 
 void FPWorth::on_lvarPlotButton_clicked()
 {

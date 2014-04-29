@@ -158,7 +158,6 @@ private:
     //QVector<struct level> levels;
     QVector<double> deltas; //minsupps for levels
     QVector<struct pattern> frequentPatterns;
-    QVector<struct pattern> fpList;
     QVector< QVector<struct numCluster> > data; // num and cluster all terms(with fire) [rows][cols+1]
     QVector< QVector<int> > count_cluster; //Число элементов в кластере.[cols+1][lvar_size]
     QVector< QVector<double> > means; // ядра кластеров.
@@ -183,13 +182,13 @@ private:
 
     QVector<QVector<membershipFunction> > approxGauss(QVector< QVector<struct numCluster> > data);
     QStringList readFileToStringList(QString fileName);
-    void makeCTree(int rows);
+    int makeCTree(int rows);
     void findRules(int first, int last);
     void printRules(QVector<pattern> fpList);
     void writeFromTableToDeltas();
     void writeFromDeltasToTable();
 
-    //void nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod);
+    void nnpsCalc(QVector<double> xs, double *fire1, double *fire2, double *prod);
     void drawTerm(int i, int j);
 
     QNetworkAccessManager * mgr;
