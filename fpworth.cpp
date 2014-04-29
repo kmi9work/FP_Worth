@@ -1320,7 +1320,7 @@ void FPWorth::on_pushButton_clicked()
             xs[i] = splitList[i].toDouble();
         }
         fires = splitList[i].toDouble();
-        //nnpsCalc(xs, &fire1, &fire2, &prod);
+        nnpsCalc(xs, &fire1, &fire2, &prod);
         e1 = fabs(fire1 - fires);
         e2 = fabs(fire2 - fires);
         if (e1 > error1.maxx){
