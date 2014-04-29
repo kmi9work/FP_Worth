@@ -10,7 +10,7 @@ struct term;
 class CandidateTree
 {
 public:
-    CandidateTree(QVector<double> ds, int rs);
+    CandidateTree(QVector<double> ds, int rs, int lp_count);
     struct term data;
     int support; // Поддержка
     int rows;

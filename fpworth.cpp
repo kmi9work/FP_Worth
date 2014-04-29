@@ -493,7 +493,7 @@ void FPWorth::on_makeRulesAprioriButton_clicked()
     ui->makeRulesBar->setValue(1);
     CandidateTree::levels.clear();
     frequentPatterns.clear();
-    rootCTree = new CandidateTree(deltas, rows);
+    rootCTree = new CandidateTree(deltas, rows, cols);
     //        ui->makeRulesBar->setValue(1 + ((double)i/fire_count) * 90 + 5);
     if (makeCTree(rows) == -1){
         QMessageBox::critical(this, tr("Error"), tr("Not enought memory!"));

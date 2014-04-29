@@ -3,7 +3,7 @@
 
 QVector< QVector<CandidateTree*> > CandidateTree::levels;
 
-CandidateTree::CandidateTree(QVector<double> ds, int rs)
+CandidateTree::CandidateTree(QVector<double> ds, int rs, int lp_count)
 {
     father = NULL;
     data.lp_number = -1;
@@ -12,7 +12,8 @@ CandidateTree::CandidateTree(QVector<double> ds, int rs)
     level = -1;
     deltas = ds;
     rows = rs;
-    levels.resize(1);
+    if (lp_count != -1) levels.resize(lp_count);
+
 }
 
 int CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
@@ -20,7 +21,7 @@ int CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
     CandidateTree *ct;// String Numbers!!!
     if (level == -1){
         if ((double)d.support / rows > deltas[0]){
-            ct = new CandidateTree(deltas, rows);
+            ct = new CandidateTree(deltas, rows, -1);
             if (ct == NULL) return -1;
             ct->father = this;
             ct->data = d;
@@ -35,7 +36,7 @@ int CandidateTree::addChild(struct term d, int supp, QVector<int> str_nums)
             levels[ct->level].append(ct);*/
         }
     }else{//if ((double)min(support, d.support)/rows > deltas[min(level + 1, deltas.size() - 1)]){
-        ct = new CandidateTree(deltas, rows);
+        ct = new CandidateTree(deltas, rows, -1);
         if (ct == NULL) return -1;
         ct->father = this;
         ct->data = d;
@@ -65,7 +66,7 @@ int CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int r
     ret = 0;
     if (children.empty() && data.lp_number == cols-1 && father != NULL && father->father != NULL){
         conf = (double) support / (double)father->support;
-        levels[0].append(this);
+        levels[level].append(this);
     }
 
     for (i = 0; i < children.size(); i++){
@@ -109,7 +110,7 @@ QVector<struct pattern> CandidateTree::assocRules(int first, int last)
     struct pattern buf_pattern;
     QVector<struct pattern> ret;
     if (last < first) return ret;
-    for (i = first - 1; i < min(last,levels.size()); i++){
+    for (i = first; i < min(last + 1,levels.size()); i++){
         for (j = 0; j < levels[i].size(); j++){
             node = levels[i][j];
             buf_pattern.support = node->support;
