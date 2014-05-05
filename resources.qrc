@@ -4,5 +4,6 @@
     </qresource>
     <qresource prefix="/data">
         <file alias="ids.txt">data/ids.txt</file>
+        <file alias="abansky.txt">data/ids_abansky_dist.txt</file>
     </qresource>
 </RCC>

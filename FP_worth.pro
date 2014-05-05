@@ -58,7 +58,8 @@ FORMS    += fpworth.ui
 
 OTHER_FILES += \
     logo.png \
-    images/loading.gif
+    images/loading.gif \
+    TODO.txt
 
 CONFIG += qwt
 

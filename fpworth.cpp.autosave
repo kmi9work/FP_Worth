@@ -1715,7 +1715,7 @@ void FPWorth::on_coordRp5File_clicked()
             }
         }
         current_id = cities[mini].id;
-        if (downloaded_ids.contains(current_id)){
+        if (downloaded_ids.contains(current_id)){ 
           continue;
         }else{
           downloaded_ids.append(current_id);

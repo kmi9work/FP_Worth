@@ -94,7 +94,7 @@ int CandidateTree::makeTree(QVector< QVector<struct numCluster> > records, int r
                     str_nums.append(l);
                 }
             }
-            if ((double)currentSupp / rows > deltas[min(currentTerms.size() - 1, deltas.size() - 1)]){
+            if ((double)currentSupp / rows > deltas[0]){ //min(currentTerms.size() - 1, deltas.size() - 1)
                 if (children[i]->addChild(children[j]->data, currentSupp, str_nums) == -1) return -1;
             }
         }

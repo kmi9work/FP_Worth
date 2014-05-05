@@ -39,7 +39,7 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>4</number>
+        <number>0</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -525,8 +525,8 @@
                  <rect>
                   <x>10</x>
                   <y>10</y>
-                  <width>291</width>
-                  <height>461</height>
+                  <width>241</width>
+                  <height>511</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -783,6 +783,14 @@
                       </widget>
                      </item>
                     </layout>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="coordRp5File">
+                     <property name="text">
+                      <string>Загрузить метеоусловия
+по координатам из файла</string>
+                     </property>
+                    </widget>
                    </item>
                    <item>
                     <spacer name="verticalSpacer_2">

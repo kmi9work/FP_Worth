@@ -129,6 +129,8 @@ private slots:
     void on_coordRp5_clicked();
 
 
+    void on_coordRp5File_clicked();
+
 private:
     void printData();
     void splitColumns();
@@ -179,6 +181,7 @@ private:
     //parser
     QVector<struct city> cities;
     QMovie *movieRp5;
+    QString current_id;
 
     QVector<QVector<membershipFunction> > approxGauss(QVector< QVector<struct numCluster> > data);
     QStringList readFileToStringList(QString fileName);
@@ -193,6 +196,8 @@ private:
 
     QNetworkAccessManager * mgr;
     void getRp5Data(QDate dFrom, QDate dTo, QString id);
+signals:
+   void finishDownload();
 
 };
 
