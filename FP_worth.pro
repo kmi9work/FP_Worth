@@ -31,7 +31,11 @@ SOURCES += main.cpp\
     alglib/solvers.cpp \
     alglib/specialfunctions.cpp \
     alglib/statistics.cpp \
-    neuronnetwork.cpp
+    neuronnetwork.cpp \
+    qdbf/qdbffield.cpp \
+    qdbf/qdbfrecord.cpp \
+    qdbf/qdbftable.cpp \
+    qdbf/qdbftablemodel.cpp
 
 HEADERS  += fpworth.h \
     fptree.h \
@@ -52,7 +56,12 @@ HEADERS  += fpworth.h \
     alglib/statistics.h \
     alglib/stdafx.h \
     neuronnetwork.h \
-    structs.h
+    structs.h \
+    qdbf/qdbf_global.h \
+    qdbf/qdbffield.h \
+    qdbf/qdbfrecord.h \
+    qdbf/qdbftable.h \
+    qdbf/qdbftablemodel.h
 
 FORMS    += fpworth.ui
 
